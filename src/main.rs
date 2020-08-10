@@ -1,10 +1,11 @@
 use gl;
 use glfw::Context;
 
-use std::ffi::c_void;
-
 #[macro_use]
+mod glcall;
+
 mod renderer;
+pub use renderer::Renderer;
 
 mod vertex_buffer;
 pub use vertex_buffer::VertexBuffer;
@@ -16,10 +17,13 @@ mod vertex_array;
 pub use vertex_array::VertexArray;
 
 mod vertex_buffer_layout;
-use vertex_buffer_layout::VertexBufferLayout;
+pub use vertex_buffer_layout::VertexBufferLayout;
 
 mod shader;
-use shader::Shader;
+pub use shader::Shader;
+
+mod texture;
+pub use texture::Texture;
 
 fn get_gl_version() {
     println!(
@@ -59,15 +63,23 @@ fn main() {
     //
     get_gl_version();
     //
-    let positions: &[[f32; 2]] =
-        &[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]];
+    let positions: &[[[f32; 2]; 2]] = &[
+        [[-0.5, -0.5], [0.0, 0.0]],
+        [[0.5, -0.5], [1.0, 0.0]],
+        [[0.5, 0.5], [1.0, 1.0]],
+        [[-0.5, 0.5], [0.0, 1.0]],
+    ];
     //
     let indices: &[[u32; 3]] = &[[0, 1, 2], [2, 3, 0]];
+    //
+    gl_call!(gl::Enable(gl::BLEND));
+    gl_call!(gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA));
     //
     let va = VertexArray::new();
     let vb = VertexBuffer::from(positions);
     //
     let mut layout = VertexBufferLayout::new();
+    layout.push::<f32>(2);
     layout.push::<f32>(2);
     va.add_buffer(&vb, layout);
     //
@@ -78,16 +90,22 @@ fn main() {
     let mut shader = Shader::new("res/shaders/basic.shader");
     shader.bind();
     //
+    let tex = Texture::new("res/textures/trans.png");
+    tex.bind();
+    shader.set_uniform_1i("u_texture", 0);
+    //
     va.unbind();
     vb.unbind();
     ib.unbind();
     shader.unbind();
     //
+    let renderer = Renderer {};
+    //
     let timer = std::time::Instant::now();
     // Loop until the user closes the window
     while !window.should_close() {
-        gl_call!(gl::ClearColor(0.0, 0.0, 0.0, 1.0));
-        gl_call!(gl::Clear(gl::COLOR_BUFFER_BIT));
+        // gl_call!(gl::ClearColor(0.5, 0.0, 0.7, 1.0));
+        renderer.clear();
         //
         shader.bind();
         shader.set_uniform_4f(
@@ -100,15 +118,7 @@ fn main() {
             ],
         );
         //
-        va.bind();
-        ib.bind();
-        //
-        gl_call!(gl::DrawElements(
-            gl::TRIANGLES,
-            ib.count,
-            gl::UNSIGNED_INT,
-            0 as *const c_void
-        ));
+        renderer.draw(&va, &ib, &shader);
         //
         // Swap front and back buffers
         window.swap_buffers();

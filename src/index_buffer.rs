@@ -1,4 +1,4 @@
-use super::renderer;
+use super::glcall;
 
 use std::ffi::c_void;
 

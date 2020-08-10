@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 gl = ""
+image = ""
 
 [dependencies.glfw]
 git = "https://github.com/bjz/glfw-rs.git"

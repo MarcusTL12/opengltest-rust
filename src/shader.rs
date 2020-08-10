@@ -1,4 +1,4 @@
-use super::renderer;
+use super::glcall;
 
 use std::{
     collections::HashMap,
@@ -126,7 +126,8 @@ impl Shader {
                 println!("Warning: uniform: '{}', does not exist!", name);
             }
             //
-            self.uniform_location_cache.insert(name.to_owned(), location);
+            self.uniform_location_cache
+                .insert(name.to_owned(), location);
             location
         }
     }
@@ -139,6 +140,10 @@ impl Shader {
             vals[2],
             vals[3]
         ));
+    }
+    //
+    pub fn set_uniform_1i(&mut self, name: &str, val: i32) {
+        gl_call!(gl::Uniform1i(self.get_uniform_location(name), val));
     }
 }
 

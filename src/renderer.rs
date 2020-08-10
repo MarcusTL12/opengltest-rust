@@ -1,32 +1,27 @@
+use super::glcall;
+
+use std::ffi::c_void;
+
 use gl;
 
-// #[macro_export]
-macro_rules! gl_call {
-    ($x:expr) => {{
-        renderer::gl_clear_error();
-        let result = unsafe { $x };
-        if !(renderer::gl_log_call()) {
-            panic!("OpenGL error at\n{}\n", stringify!($x));
-        }
-        result
-    }};
-}
+use super::{IndexBuffer, Shader, VertexArray};
+pub struct Renderer {}
 
-pub fn gl_clear_error() {
-    unsafe { while gl::GetError() != gl::NO_ERROR {} }
-}
-
-pub fn gl_log_call() -> bool {
-    unsafe {
-        let mut error;
-        let mut result = true;
-        while {
-            error = gl::GetError();
-            error != gl::NO_ERROR
-        } {
-            println!("OpenGL_Error (0x{:x})", error);
-            result = false;
-        }
-        result
+impl Renderer {
+    pub fn draw(&self, va: &VertexArray, ib: &IndexBuffer, shader: &Shader) {
+        shader.bind();
+        va.bind();
+        ib.bind();
+        //
+        gl_call!(gl::DrawElements(
+            gl::TRIANGLES,
+            ib.count,
+            gl::UNSIGNED_INT,
+            0 as *const c_void
+        ));
+    }
+    //
+    pub fn clear(&self) {
+        gl_call!(gl::Clear(gl::COLOR_BUFFER_BIT));
     }
 }

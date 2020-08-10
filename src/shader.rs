@@ -6,7 +6,7 @@ use std::{
     io::{BufRead, BufReader, Write},
 };
 
-use nalgebra;
+use nalgebra_glm as glm;
 
 pub struct Shader {
     _filepath: String,
@@ -151,7 +151,7 @@ impl Shader {
     pub fn set_uniform_mat4f(
         &mut self,
         name: &str,
-        val: &nalgebra::Matrix4<f32>,
+        val: &glm::Mat4,
     ) {
         gl_call!(gl::UniformMatrix4fv(
             self.get_uniform_location(name),

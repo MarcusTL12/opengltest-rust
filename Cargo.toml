@@ -10,8 +10,8 @@ edition = "2018"
 gl = ""
 image = ""
 num = ""
-nalgebra = ""
 nalgebra-glm = ""
+imgui-glfw-rs = ""
 
 [dependencies.glfw]
 git = "https://github.com/bjz/glfw-rs.git"

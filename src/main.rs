@@ -1,8 +1,17 @@
 #![allow(incomplete_features)]
 #![feature(const_generics)]
 
+use std::io::Write;
+
 use gl;
-use glfw::Context;
+
+use imgui_glfw_rs::{
+    glfw::{self, Context},
+    imgui::{self, im_str},
+    ImguiGLFW,
+};
+
+use nalgebra_glm as glm;
 
 #[macro_use]
 mod glcall;
@@ -28,8 +37,6 @@ pub use shader::Shader;
 mod texture;
 pub use texture::Texture;
 
-use nalgebra_glm as glm;
-
 fn get_gl_version() {
     println!(
         "{}",
@@ -50,19 +57,19 @@ fn main() {
     // ));
     glfw.window_hint(glfw::WindowHint::Resizable(false));
     // Create a windowed mode window and its OpenGL context
-    let (mut window, _events) = glfw
+    let (mut window, events) = glfw
         .create_window(
-            640,
-            480,
+            1280,
+            720,
             "Hello this is window",
             glfw::WindowMode::Windowed,
         )
         .expect("Failed to create GLFW window.");
     //
     // Make the window's context current
-    window.make_current();
+    glfw.make_context_current(Some(&window));
     glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
-    // window.set_key_polling(true);
+    window.set_all_polling(true);
     //
     gl::load_with(|s| window.get_proc_address(s));
     //
@@ -92,17 +99,16 @@ fn main() {
     //
     let ib = IndexBuffer::from(indices);
     //
-    let proj = glm::ortho(-2.0, 2.0, -1.5, 1.5, -1.0, 1.0);
+    let proj = glm::ortho(-16.0 / 9.0, 16.0 / 9.0, -1.0, 1.0, -1.0, 1.0);
     //
     let view = glm::translate(&glm::identity(), &glm::vec3(-0.5, 0.0, 0.0));
     //
-    // let model = glm::rotate2d(&glm::identity(), 1.0);
+    let mut model = glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0));
     //
-    let mvp = proj * view;
+    let mut mvp = proj * view * model;
     //
     let mut shader = Shader::new("res/shaders/basic.shader");
     shader.bind();
-    shader.set_uniform_mat4f("u_mvp\0", &mvp);
     //
     let tex = Texture::new("res/textures/mandrill.png");
     tex.bind();
@@ -115,28 +121,62 @@ fn main() {
     //
     let renderer = Renderer {};
     //
-    // let mut timer = std::time::Instant::now();
-    // let mut fps = 0;
+    let mut imgui = imgui::Context::create();
+    //
+    let mut imgui_glfw = ImguiGLFW::new(&mut imgui, &mut window);
+    //
+    let mut timer = std::time::Instant::now();
+    let mut fps = 0;
+    let mut fps_view = "fps: 0".to_owned().into_bytes();
+    //
+    let mut translation = [0.0; 3];
+    //
     // Loop until the user closes the window
     while !window.should_close() {
-        // gl_call!(gl::ClearColor(0.5, 0.0, 0.7, 1.0));
+        // gl_call!(gl::ClearColor());
         renderer.clear();
         //
-        // fps += 1;
-        // if timer.elapsed().as_secs_f64() >= 1.0 {
-        //     println!("fps: {}", fps);
-        //     fps = 0;
-        //     timer += std::time::Duration::from_secs(1);
-        // }
+        fps += 1;
+        if timer.elapsed().as_secs_f64() >= 1.0 {
+            fps_view.clear();
+            write!(fps_view, "fps: {}", fps).unwrap();
+            fps = 0;
+            timer += std::time::Duration::from_secs(1);
+        }
         //
         shader.bind();
         //
+        model = glm::translate(
+            &glm::identity(),
+            &glm::vec3(translation[0], translation[1], translation[2]),
+        );
+        mvp = proj * view * model;
+        shader.set_uniform_mat4f("u_mvp\0", &mvp);
+        //
         renderer.draw(&va, &ib, &shader);
+        //
+        let ui = imgui_glfw.frame(&mut window, &mut imgui);
+        //
+        {
+            ui.text(std::str::from_utf8(&fps_view).unwrap());
+            ui.slider_float3(
+                im_str!("Translation"),
+                &mut translation,
+                0.0,
+                1.0,
+            )
+            .build();
+        }
+        //
+        imgui_glfw.draw(ui, &mut window);
         //
         // Swap front and back buffers
         window.swap_buffers();
         //
         // Poll for and process events
         glfw.poll_events();
+        for (_, event) in glfw::flush_messages(&events) {
+            imgui_glfw.handle_event(&mut imgui, &event);
+        }
     }
 }

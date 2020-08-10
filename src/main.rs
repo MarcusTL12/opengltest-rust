@@ -1,3 +1,6 @@
+#![allow(incomplete_features)]
+#![feature(const_generics)]
+
 use gl;
 use glfw::Context;
 
@@ -24,6 +27,11 @@ pub use shader::Shader;
 
 mod texture;
 pub use texture::Texture;
+
+// mod matrix;
+// pub use matrix::Matrix;
+
+use nalgebra;
 
 fn get_gl_version() {
     println!(
@@ -87,12 +95,16 @@ fn main() {
     //
     let ib = IndexBuffer::from(indices);
     //
+    let proj = nalgebra::Orthographic3::new(-2.0f32, 2.0, -1.5, 1.5, -1.0, 1.0)
+        .into_inner();
+    //
     let mut shader = Shader::new("res/shaders/basic.shader");
     shader.bind();
+    shader.set_uniform_mat4f("u_mvp\0", &proj);
     //
-    let tex = Texture::new("res/textures/trans.png");
+    let tex = Texture::new("res/textures/mandrill.png");
     tex.bind();
-    shader.set_uniform_1i("u_texture", 0);
+    shader.set_uniform_1i("u_texture\0", 0);
     //
     va.unbind();
     vb.unbind();
@@ -101,22 +113,12 @@ fn main() {
     //
     let renderer = Renderer {};
     //
-    let timer = std::time::Instant::now();
     // Loop until the user closes the window
     while !window.should_close() {
         // gl_call!(gl::ClearColor(0.5, 0.0, 0.7, 1.0));
         renderer.clear();
         //
         shader.bind();
-        shader.set_uniform_4f(
-            "u_color\0",
-            [
-                timer.elapsed().as_secs_f32().sin().powi(2),
-                (timer.elapsed().as_secs_f32() + 1.047).sin().powi(2),
-                (timer.elapsed().as_secs_f32() + 2.094).sin().powi(2),
-                1.0,
-            ],
-        );
         //
         renderer.draw(&va, &ib, &shader);
         //

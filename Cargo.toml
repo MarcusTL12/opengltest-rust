@@ -9,6 +9,8 @@ edition = "2018"
 [dependencies]
 gl = ""
 image = ""
+num = ""
+nalgebra = ""
 
 [dependencies.glfw]
 git = "https://github.com/bjz/glfw-rs.git"

@@ -6,6 +6,8 @@ use std::{
     io::{BufRead, BufReader, Write},
 };
 
+use nalgebra;
+
 pub struct Shader {
     _filepath: String,
     renderer_id: u32,
@@ -144,6 +146,19 @@ impl Shader {
     //
     pub fn set_uniform_1i(&mut self, name: &str, val: i32) {
         gl_call!(gl::Uniform1i(self.get_uniform_location(name), val));
+    }
+    //
+    pub fn set_uniform_mat4f(
+        &mut self,
+        name: &str,
+        val: &nalgebra::Matrix4<f32>,
+    ) {
+        gl_call!(gl::UniformMatrix4fv(
+            self.get_uniform_location(name),
+            1,
+            gl::FALSE,
+            val.as_slice().as_ptr()
+        ));
     }
 }
 

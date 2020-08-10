@@ -28,10 +28,7 @@ pub use shader::Shader;
 mod texture;
 pub use texture::Texture;
 
-// mod matrix;
-// pub use matrix::Matrix;
-
-use nalgebra;
+use nalgebra_glm as glm;
 
 fn get_gl_version() {
     println!(
@@ -95,12 +92,17 @@ fn main() {
     //
     let ib = IndexBuffer::from(indices);
     //
-    let proj = nalgebra::Orthographic3::new(-2.0f32, 2.0, -1.5, 1.5, -1.0, 1.0)
-        .into_inner();
+    let proj = glm::ortho(-2.0, 2.0, -1.5, 1.5, -1.0, 1.0);
+    //
+    let view = glm::translate(&glm::identity(), &glm::vec3(-0.5, 0.0, 0.0));
+    //
+    // let model = glm::rotate2d(&glm::identity(), 1.0);
+    //
+    let mvp = proj * view;
     //
     let mut shader = Shader::new("res/shaders/basic.shader");
     shader.bind();
-    shader.set_uniform_mat4f("u_mvp\0", &proj);
+    shader.set_uniform_mat4f("u_mvp\0", &mvp);
     //
     let tex = Texture::new("res/textures/mandrill.png");
     tex.bind();
@@ -113,10 +115,19 @@ fn main() {
     //
     let renderer = Renderer {};
     //
+    // let mut timer = std::time::Instant::now();
+    // let mut fps = 0;
     // Loop until the user closes the window
     while !window.should_close() {
         // gl_call!(gl::ClearColor(0.5, 0.0, 0.7, 1.0));
         renderer.clear();
+        //
+        // fps += 1;
+        // if timer.elapsed().as_secs_f64() >= 1.0 {
+        //     println!("fps: {}", fps);
+        //     fps = 0;
+        //     timer += std::time::Duration::from_secs(1);
+        // }
         //
         shader.bind();
         //

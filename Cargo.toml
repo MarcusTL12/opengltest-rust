@@ -11,6 +11,7 @@ gl = ""
 image = ""
 num = ""
 nalgebra = ""
+nalgebra-glm = ""
 
 [dependencies.glfw]
 git = "https://github.com/bjz/glfw-rs.git"

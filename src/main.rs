@@ -3,11 +3,6 @@ use glfw::Context;
 
 use std::ffi::c_void;
 
-use std::{
-    fs::File,
-    io::{BufRead, BufReader, Write},
-};
-
 #[macro_use]
 mod renderer;
 
@@ -23,6 +18,9 @@ pub use vertex_array::VertexArray;
 mod vertex_buffer_layout;
 use vertex_buffer_layout::VertexBufferLayout;
 
+mod shader;
+use shader::Shader;
+
 fn get_gl_version() {
     println!(
         "{}",
@@ -32,87 +30,6 @@ fn get_gl_version() {
         .to_str()
         .unwrap()
     );
-}
-
-fn compile_shader(source: &str, shader_type: u32) -> u32 {
-    let id = gl_call!(gl::CreateShader(shader_type));
-    gl_call!(gl::ShaderSource(
-        id,
-        1,
-        &(source.as_ptr() as *const i8),
-        0 as *const i32
-    ));
-    gl_call!(gl::CompileShader(id));
-    //
-    let mut result = 0;
-    gl_call!(gl::GetShaderiv(id, gl::COMPILE_STATUS, &mut result));
-    //
-    if result == 0 {
-        let mut length = 0;
-        gl_call!(gl::GetShaderiv(id, gl::INFO_LOG_LENGTH, &mut length));
-        let mut message = vec![0; length as usize];
-        gl_call!(gl::GetShaderInfoLog(
-            id,
-            length,
-            &mut length,
-            message.as_mut_ptr()
-        ));
-        let message: String =
-            message.into_iter().map(|i| i as u8 as char).collect();
-        println!(
-            "Failed to compile {} shader!, error length: {}\n{}",
-            match shader_type {
-                gl::VERTEX_SHADER => "vertex",
-                gl::FRAGMENT_SHADER => "fragment",
-                _ => "unknown",
-            },
-            length,
-            message
-        );
-    }
-    //
-    id
-}
-
-fn create_shader(vertex_shader: &str, fragment_shader: &str) -> u32 {
-    let program = gl_call!(gl::CreateProgram());
-    let vs = compile_shader(vertex_shader, gl::VERTEX_SHADER);
-    let fs = compile_shader(fragment_shader, gl::FRAGMENT_SHADER);
-    //
-    gl_call!(gl::AttachShader(program, vs));
-    gl_call!(gl::AttachShader(program, fs));
-    gl_call!(gl::LinkProgram(program));
-    gl_call!(gl::ValidateProgram(program));
-    //
-    gl_call!(gl::DeleteShader(vs));
-    gl_call!(gl::DeleteShader(fs));
-    //
-    program
-}
-
-fn parse_shader(filepath: &str) -> (String, String) {
-    let mut vs = Vec::new();
-    let mut fs = Vec::new();
-    let mut active = &mut vs;
-    //
-    for line in BufReader::new(File::open(filepath).unwrap())
-        .lines()
-        .map(|l| l.unwrap())
-    {
-        match &line[..] {
-            "#shader vertex" => active = &mut vs,
-            "#shader fragment" => active = &mut fs,
-            _ => writeln!(active, "{}", line).unwrap(),
-        }
-    }
-    //
-    vs.push(0);
-    fs.push(0);
-    //
-    (
-        String::from_utf8(vs).unwrap(),
-        String::from_utf8(fs).unwrap(),
-    )
 }
 
 fn main() {
@@ -158,30 +75,30 @@ fn main() {
     //
     let ib = IndexBuffer::from(indices);
     //
-    let (vertex_shader, fragment_shader) =
-        parse_shader("res/shaders/basic.shader");
+    let mut shader = Shader::new("res/shaders/basic.shader");
+    shader.bind();
     //
-    let shader = create_shader(&vertex_shader, &fragment_shader);
-    gl_call!(gl::UseProgram(shader));
+    va.unbind();
+    vb.unbind();
+    ib.unbind();
+    shader.unbind();
     //
-    let location = gl_call!(gl::GetUniformLocation(
-        shader,
-        "u_color\0".as_ptr() as *const i8
-    ));
-    assert_ne!(location, -1);
     let timer = std::time::Instant::now();
     // Loop until the user closes the window
     while !window.should_close() {
         gl_call!(gl::ClearColor(0.0, 0.0, 0.0, 1.0));
         gl_call!(gl::Clear(gl::COLOR_BUFFER_BIT));
         //
-        gl_call!(gl::Uniform4f(
-            location,
-            timer.elapsed().as_secs_f32().sin().powi(2),
-            (timer.elapsed().as_secs_f32() + 1.047).sin().powi(2),
-            (timer.elapsed().as_secs_f32() + 2.094).sin().powi(2),
-            1.0
-        ));
+        shader.bind();
+        shader.set_uniform_4f(
+            "u_color\0",
+            [
+                timer.elapsed().as_secs_f32().sin().powi(2),
+                (timer.elapsed().as_secs_f32() + 1.047).sin().powi(2),
+                (timer.elapsed().as_secs_f32() + 2.094).sin().powi(2),
+                1.0,
+            ],
+        );
         //
         va.bind();
         ib.bind();
@@ -199,6 +116,4 @@ fn main() {
         // Poll for and process events
         glfw.poll_events();
     }
-    //
-    gl_call!(gl::DeleteProgram(shader));
 }

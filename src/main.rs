@@ -33,7 +33,7 @@ mod texture;
 pub use texture::Texture;
 
 mod tests;
-pub use tests::{test_clear_color::TestClearColor, OGLTest};
+pub use tests::{test_clear_color::TestClearColor, OGLTest, TestMenu};
 
 fn get_gl_version() {
     println!(
@@ -83,18 +83,21 @@ fn main() {
     //
     let mut imgui_glfw = ImguiGLFW::new(&mut imgui, &mut window);
     //
-    let mut test = TestClearColor::new();
+    let mut test_menu = TestMenu::new();
+    //
+    test_menu.register_test::<TestClearColor>("Clear Color");
     //
     // Loop until the user closes the window
     while !window.should_close() {
+        gl_call!(gl::ClearColor(0.0, 0.0, 0.0, 1.0));
         renderer.clear();
         //
-        test.on_update(0.0);
-        test.on_render();
+        test_menu.on_update(0.0);
+        test_menu.on_render();
         //
         let ui = imgui_glfw.frame(&mut window, &mut imgui);
         //
-        test.on_imgui_render(&ui);
+        test_menu.on_imgui_render(&ui);
         //
         imgui_glfw.draw(ui, &mut window);
         //

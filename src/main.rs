@@ -101,7 +101,7 @@ fn main() {
     //
     let proj = glm::ortho(-16.0 / 9.0, 16.0 / 9.0, -1.0, 1.0, -1.0, 1.0);
     //
-    let view = glm::translate(&glm::identity(), &glm::vec3(-0.5, 0.0, 0.0));
+    let view = glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0));
     //
     let mut model = glm::translate(&glm::identity(), &glm::vec3(0.0, 0.0, 0.0));
     //
@@ -109,9 +109,14 @@ fn main() {
     //
     let mut shader = Shader::new("res/shaders/basic.shader");
     shader.bind();
+    shader.set_uniform_mat4f("u_mvp\0", &mvp);
     //
-    let tex = Texture::new("res/textures/mandrill.png");
-    tex.bind();
+    let tex_a = Texture::new("res/textures/mandrill.png");
+    tex_a.bind();
+    //
+    let tex_b = Texture::new("res/textures/trans.png");
+    tex_b.bind();
+    //
     shader.set_uniform_1i("u_texture\0", 0);
     //
     va.unbind();
@@ -129,7 +134,8 @@ fn main() {
     let mut fps = 0;
     let mut fps_view = "fps: 0".to_owned().into_bytes();
     //
-    let mut translation = [0.0; 3];
+    let mut translation_a = [0.0; 3];
+    let mut translation_b = [0.0; 3];
     //
     // Loop until the user closes the window
     while !window.should_close() {
@@ -146,23 +152,52 @@ fn main() {
         //
         shader.bind();
         //
-        model = glm::translate(
-            &glm::identity(),
-            &glm::vec3(translation[0], translation[1], translation[2]),
-        );
-        mvp = proj * view * model;
-        shader.set_uniform_mat4f("u_mvp\0", &mvp);
+        {
+            tex_a.bind();
+            model = glm::translate(
+                &glm::identity(),
+                &glm::vec3(
+                    translation_a[0],
+                    translation_a[1],
+                    translation_a[2],
+                ),
+            );
+            mvp = proj * view * model;
+            shader.set_uniform_mat4f("u_mvp\0", &mvp);
+            renderer.draw(&va, &ib, &shader);
+        }
         //
-        renderer.draw(&va, &ib, &shader);
+        {
+            tex_b.bind();
+            model = glm::translate(
+                &glm::identity(),
+                &glm::vec3(
+                    translation_b[0],
+                    translation_b[1],
+                    translation_b[2],
+                ),
+            );
+            mvp = proj * view * model;
+            shader.set_uniform_mat4f("u_mvp\0", &mvp);
+            renderer.draw(&va, &ib, &shader);
+        }
         //
         let ui = imgui_glfw.frame(&mut window, &mut imgui);
         //
         {
             ui.text(std::str::from_utf8(&fps_view).unwrap());
             ui.slider_float3(
-                im_str!("Translation"),
-                &mut translation,
-                0.0,
+                im_str!("Translation A"),
+                &mut translation_a,
+                -1.0,
+                1.0,
+            )
+            .build();
+            //
+            ui.slider_float3(
+                im_str!("Translation B"),
+                &mut translation_b,
+                -1.0,
                 1.0,
             )
             .build();

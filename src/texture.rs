@@ -24,7 +24,7 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn new(filepath: &str) -> Self {
+    pub fn from_file(filepath: &str) -> Self {
         let mut id = 0;
         gl_call!(gl::GenTextures(1, &mut id));
         gl_call!(gl::BindTexture(gl::TEXTURE_2D, id));

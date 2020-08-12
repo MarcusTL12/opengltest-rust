@@ -5,8 +5,11 @@ use gl;
 
 use imgui_glfw_rs::{
     glfw::{self, Context},
-    imgui, ImguiGLFW,
+    imgui::{self, im_str},
+    ImguiGLFW,
 };
+
+use nalgebra_glm as glm;
 
 #[macro_use]
 mod glcall;
@@ -33,7 +36,10 @@ mod texture;
 pub use texture::Texture;
 
 mod tests;
-pub use tests::{test_clear_color::TestClearColor, OGLTest, TestMenu};
+pub use tests::{
+    test_clear_color::TestClearColor, test_texture2d::TestTexture2D, OGLTest,
+    TestMenu,
+};
 
 fn get_gl_version() {
     println!(
@@ -57,25 +63,17 @@ fn main() {
     glfw.window_hint(glfw::WindowHint::Resizable(false));
     // Create a windowed mode window and its OpenGL context
     let (mut window, events) = glfw
-        .create_window(
-            1280,
-            720,
-            "Hello this is window",
-            glfw::WindowMode::Windowed,
-        )
+        .create_window(1280, 720, "OpenGL testing", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
     //
     // Make the window's context current
     glfw.make_context_current(Some(&window));
-    glfw.set_swap_interval(glfw::SwapInterval::Sync(1));
+    glfw.set_swap_interval(glfw::SwapInterval::Sync(0));
     window.set_all_polling(true);
     //
     gl::load_with(|s| window.get_proc_address(s));
     //
     get_gl_version();
-    //
-    gl_call!(gl::Enable(gl::BLEND));
-    gl_call!(gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA));
     //
     let renderer = Renderer {};
     //
@@ -86,6 +84,7 @@ fn main() {
     let mut test_menu = TestMenu::new();
     //
     test_menu.register_test::<TestClearColor>("Clear Color");
+    test_menu.register_test::<TestTexture2D>("Texture 2D");
     //
     // Loop until the user closes the window
     while !window.should_close() {

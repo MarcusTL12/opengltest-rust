@@ -96,7 +96,7 @@ fn parse_shader(filepath: &str) -> (String, String) {
 }
 
 impl Shader {
-    pub fn new(filepath: &str) -> Self {
+    pub fn from_file(filepath: &str) -> Self {
         let (vs, fs) = parse_shader(filepath);
         let id = create_shader(&vs, &fs);
         //

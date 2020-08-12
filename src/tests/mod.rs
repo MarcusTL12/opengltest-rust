@@ -1,4 +1,5 @@
 pub mod test_clear_color;
+pub mod test_texture2d;
 
 use imgui_glfw_rs::imgui::{im_str, Window};
 
